@@ -43,7 +43,9 @@ PANEL_FIFO=/tmp/panel-fifo
 PANEL_HEIGHT=24
 #PANEL_GEOMETRY="1867x18+52+0"
 # PANEL_FONT="-bitstream-terminal-medium-r-normal--18-140-100-100-c-110-iso8859-1"
-PANEL_FONT="-xos4-terminus-bold-r-normal--18-180-72-72-c-100-iso10646-1"
+# PANEL_FONT="-xos4-terminus-bold-r-normal--18-180-72-72-c-100-iso10646-1"
+#PANEL_FONT="-adobe-helvetica-medium-r-normal--18-180-75-75-p-98-iso10646-1"
+PANEL_FONT="-adobe-new century schoolbook-bold-i-normal--18-180-75-75-p-111-iso8859-1"
 #PANEL_FONT="-misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso8859-1"
 # PANEL_FONT="-misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso8859-1"
 #PANEL_FONT="Terminus-17"
@@ -79,190 +81,190 @@ datetime() {
 
 }
 
-brightness() {
-
-    printf "%s%%" "%{A4:light -A 10:}%{A5:light -U 10:}%{F#FFFA58F4}BR:%{F-}%{F#FF28DECB}$(light -G | cut -d . -f 1)%{A}%{A}"
-
-}
-
-mpd_music() {
-
-    # Only check other things if mpd is up and ready...
-    stat=$(mpc | awk 'NR==2{print $1}')
-    if [ -z $stat ] || [ $stat = '[paused]' ]; then
-        # do nothing
-        :
-    elif [ $stat = '[playing]' ]; then
-        # I don't want to pollute all the bar with tags
-        # If they are lenghty, make them short
-        position=$(mpc | awk 'NR==2{print $3}')
-        info=$(mpc --format='[[%artist% - ]%title%]|[%file%]' current)
-        if [ "${#info}" -le 25 ]; then
-            :
-        else
-            info="$(mpc --format='[[%artist% - ]%title%]|[%file%]' current \
-                | head -c 32)"
-        fi
-
-        printf "%s" "%{A:mpc prev>/dev/null 2>&1:}%{F#FF00FFFF}$info%{F-}%{A} %{A:mpc next>/dev/null 2>&1:}%{F#FFDAA520}$position%{F-}%{A}"
-    fi
-
-}
-
-cmus_music() {
-
-    stat=$(cmus-remote -Q 2>/dev/null | awk '/status/{print $2}')
-    if [ -z $stat ]; then
-        # do nothing
-        :
-    elif [ $stat = 'paused' ]; then
-        # do nothing
-        :
-    elif [ $stat = 'playing' ]; then
-        artist=$(cmus-remote -C status | grep 'tag\ artist' | cut -d ' ' -f 3-)
-        if [ ${#artist} -le 16 ]; then
-            :
-        else
-            artist=$(cmus-remote -C status | grep 'tag\ artist' | cut -d ' ' -f\
-                3- | head -c 16)
-        fi
-        title=$(cmus-remote -C status | grep 'tag\ title' | cut -d ' ' -f 3-)
-        if [ ${#title} -le 16 ]; then
-            :
-        else
-            title=$(cmus-remote -C status | grep 'tag\ title' | cut -d ' ' -f\
-                3- | head -c 16)
-        fi
-
-
-        full_time=$(cmus-remote -C status | awk '/duration/{print $2}')
-        now_time=$(cmus-remote -C status | awk '/position/{print $2}')
-        hours=$(($full_time / 3600))
-        now_hours=$(($now_time / 3600))
-        minutes=$(($full_time % 3600))
-        now_minutes=$(($now_time % 3600))
-        test $hours -gt 0 && dur="$hours:"
-        test $now_hours -gt 0 && now_dur="$now_hours:"
-        duration="$dur$(printf '%02d:%02d' $(($minutes / 60)) $(($minutes % 60)))"
-        position="$now_dur$(printf '%02d:%02d' $(($now_minutes / 60)) $(($now_minutes % 60)))"
-        printf "%s" "%{A:cmus-remote --prev 2>/dev/null:}%{F#FF00FFFF}$artist - %{F#FFDAA520}$title%{A} %{A:cmus-remote --next 2>/dev/null:}%{F#FFFF00DD}$position/$duration%{A}"
-    fi
-
-}
-
-wifi() {
-
-    ssid="$(iw dev wlp3s0 link | awk -F: '/SSID/ {print $NF}')"
-    if [ -z "${ssid}" ]; then
-        # Do nothing
-        :
-    else
-        printf "%s" "%{F#D1FF50}$ssid%{F-}"
-    fi
-
-}
-
-cpu() {
-
-    cpu=$(ps -eo pcpu | awk 'BEGIN {sum=0.0f} {sum+=$1} END {print sum}')
-    temp=$(($(cat /sys/class/thermal/thermal_zone0/temp) / 1000))
-    if [ $temp -ge 60 ];
-    then
-        temperature="%{F#F92672}$temp°c%{F-}"
-    else
-        temperature="%{F#00FFFF}$temp°c%{F-}"
-    fi
-    printf "%s" "%{F#FFF042}CPU:%{F-}%{F#9181E7}$cpu $temperature"
-
-}
-
-mails() {
-
-    count=$(find $HOME/.local/share/email/x1c/INBOX/new -type f -print | wc -l)
-    if [ $count -ne 0 ]; then
-        printf "%s" "%{F#FFFF0000}Mails:%{F-}%{F#FFF4C430}$count%{F-}"
-    fi
-
-}
-
-battery() {
-
-    sysfs="/sys/class/power_supply"
-    _battery="BAT0"
-    mains="AC"
-    power_now="$(cat $sysfs/$_battery/power_now)"
-    energy_now="$(cat $sysfs/$_battery/energy_now)"
-    energy_full="$(cat $sysfs/$_battery/energy_full)"
-    ac_on="$(cat $sysfs/$mains/online)"
-    is_charger_connected="$(cat /sys/class/power_supply/AC/online)"
-    if [ $is_charger_connected = 0 ]; then
-        printf "%s" "%{F#FFFF0000}Discharging:%{F-}"
-    elif [ $is_charger_connected = 1 ]; then
-        printf "%s" "%{F#FF00FF00}Charging:%{F-}"
-    else
-        printf "%s" "%{F#FF0000FF}AC:%{F-}"
-    fi
-    battery_percentage="$(cat /sys/class/power_supply/BAT0/capacity)"
-    if [ $battery_percentage -gt 60 ]; then
-        printf "%s" "%{F#FF00FF00}$battery_percentage% %{F-}"
-    elif [ $battery_percentage -gt 30 ]; then
-        printf "%s" "%{F#FFFFFF00}$battery_percentage% %{F-}"
-    elif [ $battery_percentage -lt 30 ] && [ "${is_charger_connected}" -ne 1 ] ; then
-        notify-send -u critical -t 30000 "Battery critically low!"
-        printf "%s" "%{F#FFFF3361}$battery_percentage% %{F-}"
-    else
-        printf "%s" "%{F#FFFF0000}$battery_percentage% %{F-}"
-    fi
-    if [ "${ac_on}" -ne 0 ]; then
-        if [ "${power_now}" -ne 0 ] ; then
-            remaining_time=$(( (energy_full - energy_now) * 60 / power_now ))
-        else
-            remaining_time="?"
-        fi
-    else
-        if [ "${power_now}" -ne 0 ] ; then
-            remaining_time="$(( energy_now * 60 / power_now ))"
-        else
-            remaining_time="?"
-        fi
-    fi
-    printf "%s" "%{F#FF9D10A4}$remaining_time mins %{F-}"
-
-}
-
+#brightness() {
+#
+#    printf "%s%%" "%{A4:light -A 10:}%{A5:light -U 10:}%{F#FFFA58F4}BR:%{F-}%{F#FF28DECB}$(light -G | cut -d . -f 1)%{A}%{A}"
+#
+#}
+#
+#mpd_music() {
+#
+#    # Only check other things if mpd is up and ready...
+#    stat=$(mpc | awk 'NR==2{print $1}')
+#    if [ -z $stat ] || [ $stat = '[paused]' ]; then
+#        # do nothing
+#        :
+#    elif [ $stat = '[playing]' ]; then
+#        # I don't want to pollute all the bar with tags
+#        # If they are lenghty, make them short
+#        position=$(mpc | awk 'NR==2{print $3}')
+#        info=$(mpc --format='[[%artist% - ]%title%]|[%file%]' current)
+#        if [ "${#info}" -le 25 ]; then
+#            :
+#        else
+#            info="$(mpc --format='[[%artist% - ]%title%]|[%file%]' current \
+#                | head -c 32)"
+#        fi
+#
+#        printf "%s" "%{A:mpc prev>/dev/null 2>&1:}%{F#FF00FFFF}$info%{F-}%{A} %{A:mpc next>/dev/null 2>&1:}%{F#FFDAA520}$position%{F-}%{A}"
+#    fi
+#
+#}
+#
+#cmus_music() {
+#
+#    stat=$(cmus-remote -Q 2>/dev/null | awk '/status/{print $2}')
+#    if [ -z $stat ]; then
+#        # do nothing
+#        :
+#    elif [ $stat = 'paused' ]; then
+#        # do nothing
+#        :
+#    elif [ $stat = 'playing' ]; then
+#        artist=$(cmus-remote -C status | grep 'tag\ artist' | cut -d ' ' -f 3-)
+#        if [ ${#artist} -le 16 ]; then
+#            :
+#        else
+#            artist=$(cmus-remote -C status | grep 'tag\ artist' | cut -d ' ' -f\
+#                3- | head -c 16)
+#        fi
+#        title=$(cmus-remote -C status | grep 'tag\ title' | cut -d ' ' -f 3-)
+#        if [ ${#title} -le 16 ]; then
+#            :
+#        else
+#            title=$(cmus-remote -C status | grep 'tag\ title' | cut -d ' ' -f\
+#                3- | head -c 16)
+#        fi
+#
+#
+#        full_time=$(cmus-remote -C status | awk '/duration/{print $2}')
+#        now_time=$(cmus-remote -C status | awk '/position/{print $2}')
+#        hours=$(($full_time / 3600))
+#        now_hours=$(($now_time / 3600))
+#        minutes=$(($full_time % 3600))
+#        now_minutes=$(($now_time % 3600))
+#        test $hours -gt 0 && dur="$hours:"
+#        test $now_hours -gt 0 && now_dur="$now_hours:"
+#        duration="$dur$(printf '%02d:%02d' $(($minutes / 60)) $(($minutes % 60)))"
+#        position="$now_dur$(printf '%02d:%02d' $(($now_minutes / 60)) $(($now_minutes % 60)))"
+#        printf "%s" "%{A:cmus-remote --prev 2>/dev/null:}%{F#FF00FFFF}$artist - %{F#FFDAA520}$title%{A} %{A:cmus-remote --next 2>/dev/null:}%{F#FFFF00DD}$position/$duration%{A}"
+#    fi
+#
+#}
+#
+#wifi() {
+#
+#    ssid="$(iw dev wlp3s0 link | awk -F: '/SSID/ {print $NF}')"
+#    if [ -z "${ssid}" ]; then
+#        # Do nothing
+#        :
+#    else
+#        printf "%s" "%{F#D1FF50}$ssid%{F-}"
+#    fi
+#
+#}
+#
+#cpu() {
+#
+#    cpu=$(ps -eo pcpu | awk 'BEGIN {sum=0.0f} {sum+=$1} END {print sum}')
+#    temp=$(($(cat /sys/class/thermal/thermal_zone0/temp) / 1000))
+#    if [ $temp -ge 60 ];
+#    then
+#        temperature="%{F#F92672}$temp°c%{F-}"
+#    else
+#        temperature="%{F#00FFFF}$temp°c%{F-}"
+#    fi
+#    printf "%s" "%{F#FFF042}CPU:%{F-}%{F#9181E7}$cpu $temperature"
+#
+#}
+#
+#mails() {
+#
+#    count=$(find $HOME/.local/share/email/x1c/INBOX/new -type f -print | wc -l)
+#    if [ $count -ne 0 ]; then
+#        printf "%s" "%{F#FFFF0000}Mails:%{F-}%{F#FFF4C430}$count%{F-}"
+#    fi
+#
+#}
+#
+#battery() {
+#
+#    sysfs="/sys/class/power_supply"
+#    _battery="BAT0"
+#    mains="AC"
+#    power_now="$(cat $sysfs/$_battery/power_now)"
+#    energy_now="$(cat $sysfs/$_battery/energy_now)"
+#    energy_full="$(cat $sysfs/$_battery/energy_full)"
+#    ac_on="$(cat $sysfs/$mains/online)"
+#    is_charger_connected="$(cat /sys/class/power_supply/AC/online)"
+#    if [ $is_charger_connected = 0 ]; then
+#        printf "%s" "%{F#FFFF0000}Discharging:%{F-}"
+#    elif [ $is_charger_connected = 1 ]; then
+#        printf "%s" "%{F#FF00FF00}Charging:%{F-}"
+#    else
+#        printf "%s" "%{F#FF0000FF}AC:%{F-}"
+#    fi
+#    battery_percentage="$(cat /sys/class/power_supply/BAT0/capacity)"
+#    if [ $battery_percentage -gt 60 ]; then
+#        printf "%s" "%{F#FF00FF00}$battery_percentage% %{F-}"
+#    elif [ $battery_percentage -gt 30 ]; then
+#        printf "%s" "%{F#FFFFFF00}$battery_percentage% %{F-}"
+#    elif [ $battery_percentage -lt 30 ] && [ "${is_charger_connected}" -ne 1 ] ; then
+#        notify-send -u critical -t 30000 "Battery critically low!"
+#        printf "%s" "%{F#FFFF3361}$battery_percentage% %{F-}"
+#    else
+#        printf "%s" "%{F#FFFF0000}$battery_percentage% %{F-}"
+#    fi
+#    if [ "${ac_on}" -ne 0 ]; then
+#        if [ "${power_now}" -ne 0 ] ; then
+#            remaining_time=$(( (energy_full - energy_now) * 60 / power_now ))
+#        else
+#            remaining_time="?"
+#        fi
+#    else
+#        if [ "${power_now}" -ne 0 ] ; then
+#            remaining_time="$(( energy_now * 60 / power_now ))"
+#        else
+#            remaining_time="?"
+#        fi
+#    fi
+#    printf "%s" "%{F#FF9D10A4}$remaining_time mins %{F-}"
+#
+#}
+#
 ram(){
 
     used_ram="$(free | awk '/Mem:/ {print int($3/$2 * 100.0)}')%"
-    printf "%s" "%{F#B443F3}RAM:%{F-}%{F#B89C6C}$used_ram%%{F-}"
+    printf "%s" "%{F#9D10A4}RAM:%{F-}%{F#F92672}$used_ram%%{F-}"
 
 }
 
-volume(){
-
-    current_volume="$(pamixer --get-volume)"
-    is_muted="$(pamixer --get-volume-human)"
-    if [ "${is_muted}" = "muted" ] ; then
-        vol="muted"
-    else
-        vol="$current_volume"
-    fi
-
-    printf "%s" "%{A:pamixer -t:}%{A4:pamixer --allow-boost --set-limit 300 -i 10:}%{A5:pamixer --allow-boost --set-limit 300 -d 10:}%{F#5E81AC}Vol:%{F-}%{F#FF8916}$vol%{F-}%{A}%{A}%{A}"
-
-}
+#volume(){
+#
+#    current_volume="$(pamixer --get-volume)"
+#    is_muted="$(pamixer --get-volume-human)"
+#    if [ "${is_muted}" = "muted" ] ; then
+#        vol="muted"
+#    else
+#        vol="$current_volume"
+#    fi
+#
+#    printf "%s" "%{A:pamixer -t:}%{A4:pamixer --allow-boost --set-limit 300 -i 10:}%{A5:pamixer --allow-boost --set-limit 300 -d 10:}%{F#5E81AC}Vol:%{F-}%{F#FF8916}$vol%{F-}%{A}%{A}%{A}"
+#
+#}
 
 all_info() {
     while : ; do
         echo "H" "$(datetime)"
-        echo "C" "$(brightness)"
-        echo "P" "$(mpd_music)"
-        echo "Z" "$(cmus_music)"
-        echo "G" "$(wifi)"
-        echo "Y" "$(cpu)"
-        echo "M" "$(mails)"
-        echo "B" "$(battery)"
+#        echo "C" "$(brightness)"
+#        echo "P" "$(mpd_music)"
+#        echo "Z" "$(cmus_music)"
+#        echo "G" "$(wifi)"
+#        echo "Y" "$(cpu)"
+#        echo "M" "$(mails)"
+#        echo "B" "$(battery)"
         echo "R" "$(ram)"
-        echo "V" "$(volume)"
+#        echo "V" "$(volume)"
         sleep 1
     done
 }
@@ -274,39 +276,39 @@ my_panel() {
 
     while read -r line ; do
     	case $line in
-            B*)
-                battery="${line#?}"
-                ;;
-            C*)
-                brightness="${line#?}"
-                ;;
+#            B*)
+#                battery="${line#?}"
+#                ;;
+#            C*)
+#                brightness="${line#?}"
+#                ;;
             H*)
                 date="${line#?}"
                 ;;
-            G*)
-                wifi="${line#?}"
-                ;;
-            Y*)
-                cpu="${line#?}"
-                ;;
-            M*)
-                mails="${line#?}"
-                ;;
-            Z*)
-                music="${line#?}"
-                ;;
+#            G*)
+#                wifi="${line#?}"
+#                ;;
+#            Y*)
+#                cpu="${line#?}"
+#                ;;
+#            M*)
+#                mails="${line#?}"
+#                ;;
+#            Z*)
+#                music="${line#?}"
+#                ;;
             R*)
                 ram="${line#?}"
                 ;;
-            V*)
-                volume="${line#?}"
-                ;;
-            S*)
-                spotify_music="${line#?}"
-                ;;
-            P*)
-                mpd_music="${line#?}"
-                ;;
+#            V*)
+#                volume="${line#?}"
+#                ;;
+#            S*)
+#                spotify_music="${line#?}"
+#                ;;
+#            P*)
+#                mpd_music="${line#?}"
+#                ;;
 	    W*)
 	       # bspwm's state
 			wm=
@@ -405,7 +407,7 @@ my_panel() {
 			done
 			;;
 	esac
-	printf "%s\n" "%{l}${left_corner}${wm}${mpd_music}${spotify_music}${music} %{r}${mails} ${wifi} ${brightness} ${cpu} ${ram} ${volume} ${battery} ${date}${right_corner}"
+	printf "%s\n" "%{l}${left_corner}${wm}  %{r}${ram} ${date}${right_corner}"
 done
 }
 
