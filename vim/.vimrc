@@ -50,6 +50,9 @@ if &compatible
     set nocompatible
 endif
 
+" No backup for encrypted files
+set backupskip+=*.gpg,*.age
+
 " vim bullets for .md, .txt, and gitcommit
 let g:bullets_enabled_file_types = ['markdown', 'text', 'gitcommit', 'mail']
 
@@ -135,10 +138,14 @@ autocmd! bufwritepost $HOME/cfg/bspwm/.config/bspwm/bspwmrc !bspc wm -r >/dev/nu
 autocmd! bufwritepost $HOME/cfg/etc/.local/bin/mypanel !pkill mypanel && $HOME/.local/bin/mypanel & disown
 autocmd! bufwritepost $HOME/cfg/sway/.config/sway/config !swaymsg reload
 autocmd! bufwritepost $HOME/cfg/herbstluftwm/.config/herbstluftwm/autostart !herbstclient reload
+"autocmd! bufwritepost *.md !pandoc -o /tmp/index.html --template $HOME/.local/share/pandoc/template.html -s -f markdown -t html -V mainfont="Chakra Petch" -V fontsize=25px --metadata-file $HOME/.local/share/pandoc/metadata.yaml --toc %:p 
+
+" mmm abbreviated as my mail address
+iabbrev mmm abdullah@abdullah.solutions
 set nocp
 filetype on
 au BufNewFile,BufRead *Pkgfile set filetype=sh
-set textwidth=120
+set textwidth=80
 if !&scrolloff
   set scrolloff=3
 endif
@@ -148,6 +155,7 @@ endif
 set foldlevel=4
 set foldmethod=marker
 set foldmarker=<<<,>>>
+set nofoldenable
 filetype plugin indent on
 set showmode
 set fo+=w
@@ -187,7 +195,8 @@ set display+=lastline
 set display+=truncate
 set display+=uhex
 silent! set listchars=eol:¬,tab:→.,extends:»,precedes:«,trail:•
-set list
+"silent! set listchars=eol:$,tab:\[SPACE]\[SPACE]
+set nolist
 set wrap
 set tabstop=8
 set smarttab copyindent preserveindent
