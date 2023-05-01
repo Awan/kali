@@ -16,7 +16,7 @@
 [user]
 	name = "Muhammad Abdullah Khabir"
 	email = abdullah@abdullah.solutions
-	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAJ5A7S9JFVJhnm+NWJeDwAAOlw/vOa0buocCnTQmCEA abdullah@abdullah.solutions
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBh1us2CY24PhVz4iIb5moyrSEawo9WudO59tRS3DGQ6 abdullah@abdullah.solutions
 	username = Abdullah
 [push]
         default = current
